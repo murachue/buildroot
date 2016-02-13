@@ -158,7 +158,7 @@ fi
 
 # Check that a few mandatory programs are installed
 missing_progs="no"
-for prog in patch perl tar wget cpio python unzip rsync bc ${DL_TOOLS} ; do
+for prog in patch perl tar cpio rsync ${DL_TOOLS} ; do
 	if ! which $prog > /dev/null ; then
 		echo "You must install '$prog' on your build machine";
 		missing_progs="yes"
