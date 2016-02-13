@@ -8,7 +8,16 @@
 ################################################################################
 
 # Download method commands
+ifeq ($(BR2_DLBACKEND_WGET),y)
+export DLBACKEND := wget
 export WGET := $(call qstrip,$(BR2_WGET))
+else
+ifeq ($(BR2_DLBACKEND_CURL),y)
+export DLBACKEND := curl
+# note: yes, set it to WGET.
+export WGET := $(call qstrip,$(BR2_CURL))
+endif
+endif
 export SVN := $(call qstrip,$(BR2_SVN))
 export CVS := $(call qstrip,$(BR2_CVS))
 export BZR := $(call qstrip,$(BR2_BZR))
@@ -166,7 +175,7 @@ define SOURCE_CHECK_HG
 endef
 
 define DOWNLOAD_WGET
-	$(EXTRA_ENV) $(DL_WRAPPER) -b wget \
+	$(EXTRA_ENV) $(DL_WRAPPER) -b $(DLBACKEND) \
 		-o $(DL_DIR)/$(2) \
 		-H $(PKGDIR)/$($(PKG)_RAWNAME).hash \
 		$(QUIET) \
