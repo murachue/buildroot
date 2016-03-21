@@ -32,7 +32,7 @@ define inner-kconfig-package
 $(call inner-generic-package,$(1),$(2),$(3),$(4))
 
 # Default values
-$(2)_KCONFIG_EDITORS ?= menuconfig
+$(2)_KCONFIG_EDITORS ?= menuconfig nconfig
 $(2)_KCONFIG_OPTS ?=
 $(2)_KCONFIG_FIXUP_CMDS ?=
 $(2)_KCONFIG_FRAGMENT_FILES ?=

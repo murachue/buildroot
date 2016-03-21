@@ -937,15 +937,18 @@ ifeq ($(BR2_PACKAGE_BUSYBOX),y)
 endif
 ifeq ($(BR2_LINUX_KERNEL),y)
 	@echo '  linux-menuconfig       - Run Linux kernel menuconfig'
+	@echo '  linux-nconfig          - Run Linux kernel nconfig'
 	@echo '  linux-savedefconfig    - Run Linux kernel savedefconfig'
 	@echo '  linux-update-defconfig - Save the Linux configuration to the path specified'
 	@echo '                             by BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE'
 endif
 ifeq ($(BR2_TOOLCHAIN_BUILDROOT),y)
 	@echo '  uclibc-menuconfig      - Run uClibc menuconfig'
+	@echo '  uclibc-nconfig         - Run uClibc nconfig'
 endif
 ifeq ($(BR2_TARGET_BAREBOX),y)
 	@echo '  barebox-menuconfig     - Run barebox menuconfig'
+	@echo '  barebox-nconfig        - Run barebox nconfig'
 	@echo '  barebox-savedefconfig  - Run barebox savedefconfig'
 endif
 	@echo
