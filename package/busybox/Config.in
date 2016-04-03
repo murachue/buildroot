@@ -11,6 +11,31 @@ config BR2_PACKAGE_BUSYBOX
 
 if BR2_PACKAGE_BUSYBOX
 
+choice
+	prompt "Busybox version"
+
+config BR2_BUSYBOX_LATEST_VERSION
+	bool "1.24.1"
+
+config BR2_BUSYBOX_CUSTOM_LOCAL
+	bool "Local directory"
+	help
+	  This option allows Buildroot to get the Busybox source
+	  code from a local directory.
+
+endchoice
+
+config BR2_BUSYBOX_CUSTOM_LOCAL_PATH
+	string "Path to the local directory"
+	depends on BR2_BUSYBOX_CUSTOM_LOCAL
+	help
+	  Path to the local directory with the Busybox source code.
+
+config BR2_BUSYBOX_VERSION
+	string
+	default "1.24.1" if BR2_BUSYBOX_LATEST_VERSION
+	default "custom" if BR2_BUSYBOX_CUSTOM_LOCAL
+
 config BR2_PACKAGE_BUSYBOX_CONFIG
 	string "BusyBox configuration file to use?"
 	default "package/busybox/busybox.config"

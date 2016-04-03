@@ -934,6 +934,7 @@ help:
 	@echo '  <pkg>-rebuild          - Restart the build from the build step'
 ifeq ($(BR2_PACKAGE_BUSYBOX),y)
 	@echo '  busybox-menuconfig     - Run BusyBox menuconfig'
+	@echo '  busybox-nconfig        - Run BusyBox nconfig'
 endif
 ifeq ($(BR2_LINUX_KERNEL),y)
 	@echo '  linux-menuconfig       - Run Linux kernel menuconfig'

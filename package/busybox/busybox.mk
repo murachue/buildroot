@@ -4,9 +4,14 @@
 #
 ################################################################################
 
-BUSYBOX_VERSION = 1.24.1
+BUSYBOX_VERSION = $(call qstrip,$(BR2_BUSYBOX_VERSION))
+ifeq ($(BR2_BUSYBOX_CUSTOM_LOCAL),y)
+BUSYBOX_SITE = $(call qstrip,$(BR2_BUSYBOX_CUSTOM_LOCAL_PATH))
+BUSYBOX_SITE_METHOD = local
+else
 BUSYBOX_SITE = http://www.busybox.net/downloads
 BUSYBOX_SOURCE = busybox-$(BUSYBOX_VERSION).tar.bz2
+endif
 BUSYBOX_LICENSE = GPLv2
 BUSYBOX_LICENSE_FILES = LICENSE
 
@@ -47,7 +52,7 @@ endif
 
 BUSYBOX_KCONFIG_FILE = $(BUSYBOX_CONFIG_FILE)
 BUSYBOX_KCONFIG_FRAGMENT_FILES = $(call qstrip,$(BR2_PACKAGE_BUSYBOX_CONFIG_FRAGMENT_FILES))
-BUSYBOX_KCONFIG_EDITORS = menuconfig xconfig gconfig
+BUSYBOX_KCONFIG_EDITORS = menuconfig xconfig gconfig nconfig
 BUSYBOX_KCONFIG_OPTS = $(BUSYBOX_MAKE_OPTS)
 
 define BUSYBOX_PERMISSIONS
