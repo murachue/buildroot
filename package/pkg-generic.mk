@@ -712,7 +712,7 @@ $(1)-reconfigure:	$(1)-clean-for-reconfigure $(1)
 $(1)-clean-for-resync: $(1)-clean-for-reconfigure
 			rm -f $$($(2)_TARGET_RSYNC)
 
-$(1)-resync:		$(1)-clean-for-resync $(1)
+$(1)-resync:		$(1)-clean-for-resync $(1)-rsync
 
 # define the PKG variable for all targets, containing the
 # uppercase package variable prefix
