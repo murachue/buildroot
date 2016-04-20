@@ -99,6 +99,11 @@ comment "systemd needs (e)glibc toolchain, headers >= 3.10"
 	depends on !(BR2_TOOLCHAIN_USES_GLIBC \
 		&& BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_10)
 
+config BR2_INIT_BIN_SH
+	bool "/bin/sh"
+	# below line makes a recursive depend...
+	#depends on !BR2_SYSTEM_BIN_SH_NONE
+
 config BR2_INIT_NONE
 	bool "None"
 
