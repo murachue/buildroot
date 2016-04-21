@@ -1,0 +1,44 @@
+config BR2_PACKAGE_LIBDRAGON
+	bool "libdragon"
+	default n
+	depends on BR2_mips || BR2_mips64
+	help
+	  The homebrew library for developing Nintendo 64.
+	  It contains a library for developing, tools for creating N64 ROMs.
+
+if BR2_PACKAGE_LIBDRAGON
+
+choice
+	prompt "libdragon version"
+
+config BR2_LIBDRAGON_STABLE_VERSION
+	bool "02-29-2012"
+
+config BR2_LIBDRAGON_LATEST_VERSION
+	bool "git master"
+
+config BR2_LIBDRAGON_CUSTOM_LOCAL
+	bool "Local directory"
+
+endchoice
+
+config BR2_LIBDRAGON_CUSTOM_LOCAL_PATH
+	string "Path to the local directory"
+	depends on BR2_LIBDRAGON_CUSTOM_LOCAL
+	help
+	  Path to the local directory with the libdragon source code.
+
+config BR2_LIBDRAGON_VERSION
+	string
+	default "02-29-2012" if BR2_LIBDRAGON_STABLE_VERSION
+	default "master" if BR2_LIBDRAGON_LATEST_VERSION
+	default "custom" if BR2_LIBDRAGON_CUSTOM_LOCAL
+
+config BR2_PACKAGE_LIBDRAGON_N64TOOLSONLY
+	bool "Build N64 ROM tools only"
+	help
+	  Build N64 ROM tools only. This is enough for just running Linux
+	  system on Nintendo 64.
+	  If you are planning to develop libdragon-based N64 apps, say N.
+
+endif
