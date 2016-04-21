@@ -1,0 +1,5 @@
+config BR2_TARGET_N64ROM
+	bool "N64 ROM-ify"
+	depends on BR2_mips || BR2_mips64
+	help
+	  Small bootloaders for Nintendo 64
