@@ -25,6 +25,8 @@ endif
 
 LIBDRAGON_INSTALL_STAGING = YES
 LIBDRAGON_INSTALL_TARGET = NO
+# below line does not effect...?
+#HOST_LIBDRAGON_INSTALL_STAGING = YES
 
 # make build n64tools only, if we don't want to build libdragon tools.
 ifneq ($(BR2_PACKAGE_HOST_LIBDRAGON_ALLTOOLS),y)
@@ -45,10 +47,11 @@ define LIBDRAGON_INSTALL_STAGING_CMDS
 endef
 
 define HOST_LIBDRAGON_BUILD_CMDS
-	$(HOST_MAKE_ENV) $(MAKE) N64_INST="$(HOST_DIR)/usr" -C $(@D)
+	$(HOST_MAKE_ENV) $(MAKE) N64_INST="$(HOST_DIR)/usr" -C $(@D)/tools
 endef
 define HOST_LIBDRAGON_INSTALL_CMDS
-	$(HOST_MAKE_ENV) $(MAKE) N64_INST="$(HOST_DIR)/usr" -C $(@D) install
+	$(HOST_MAKE_ENV) $(MAKE) N64_INST="$(HOST_DIR)/usr" -C $(@D)/tools install
+	install -D --mode=644 $(@D)/header $(HOST_DIR)/usr/lib/header
 endef
 
 # libdragon for Linux userland is not supported...
