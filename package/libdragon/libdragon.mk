@@ -23,35 +23,34 @@ else
 $(error unknown site for libdragon)
 endif
 
-# only build tools for host.
-HOST_LIBDRAGON_SUBDIR = tools
+LIBDRAGON_INSTALL_STAGING = YES
+LIBDRAGON_INSTALL_TARGET = NO
 
-# We only want n64tools and not the libdragon?
-ifeq ($(BR2_PACKAGE_LIBDRAGON_N64TOOLSONLY),y)
+# make build n64tools only, if we don't want to build libdragon tools.
+ifneq ($(BR2_PACKAGE_HOST_LIBDRAGON_ALLTOOLS),y)
 # Prevent libdragon to build the libdragon-related tools, that is not required.
 define LIBDRAGON_DISABLE_LDTOOLS
 	$(SED) '/^build:/ s/dumpdfs mkdfs mksprite//' $(@D)/tools/Makefile
 	$(SED) '/^install:/ s/dumpdfs-install mkdfs-install mksprite-install//' $(@D)/tools/Makefile
 endef
-LIBDRAGON_PRE_BUILD_HOOKS += LIBDRAGON_DISABLE_LDTOOLS
+#LIBDRAGON_PRE_BUILD_HOOKS += LIBDRAGON_DISABLE_LDTOOLS
 HOST_LIBDRAGON_PRE_BUILD_HOOKS += LIBDRAGON_DISABLE_LDTOOLS
 endif
 
-LIBDRAGON_MAKE_ENV = \
-	N64_INST="$(STAGING_DIR)"
-	N64PREFIX="$(CROSS_COMPILE)"
-HOST_LIBDRAGON_MAKE_ENV = \
-	N64_INST="$(HOST_DIR)/usr"
+define LIBDRAGON_BUILD_CMDS
+	$(TARGET_MAKE_ENV) $(MAKE) N64_INST="$(STAGING_DIR)" N64PREFIX="$(TARGET_CROSS)" -C $(@D)
+endef
+define LIBDRAGON_INSTALL_STAGING_CMDS
+	$(TARGET_MAKE_ENV) $(MAKE) N64_INST="$(STAGING_DIR)" N64PREFIX="$(TARGET_CROSS)" -C $(@D) install
+endef
 
-# use (host-)autotools-package, but no configure, nor install to target.
-# just for run make.
-# set it ":" for just define but do nothing.
-LIBDRAGON_CONFIGURE_CMDS = :
-HOST_LIBDRAGON_CONFIGURE_CMDS = :
-LIBDRAGON_INSTALL_TARGET_CMDS = :
+define HOST_LIBDRAGON_BUILD_CMDS
+	$(HOST_MAKE_ENV) $(MAKE) N64_INST="$(HOST_DIR)/usr" -C $(@D)
+endef
+define HOST_LIBDRAGON_INSTALL_CMDS
+	$(HOST_MAKE_ENV) $(MAKE) N64_INST="$(HOST_DIR)/usr" -C $(@D) install
+endef
 
-# no install libdragon for host. only for staging.
-LIBDRAGON_INSTALL_CMDS = :
-
-$(eval $(autotools-package))
-$(eval $(host-autotools-package))
+# libdragon for Linux userland is not supported...
+#$(eval $(generic-package))
+$(eval $(host-generic-package))
