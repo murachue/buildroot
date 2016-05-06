@@ -9,6 +9,9 @@ choice
 	  64bit cabable: 64, 64r2, 64r6
 	  non-64bit capable: 32, 32r2, 32r6
 
+config BR2_mips3_32
+	bool "mips III 32"
+	depends on !BR2_ARCH_IS_64
 config BR2_mips_32
 	bool "mips 32"
 	depends on !BR2_ARCH_IS_64
@@ -68,6 +71,7 @@ config BR2_ENDIAN
 	default "BIG" 	    	if BR2_mips || BR2_mips64
 
 config BR2_GCC_TARGET_ARCH
+	default "mips3"		if BR2_mips3_32
 	default "mips32"	if BR2_mips_32
 	default "mips32r2"	if BR2_mips_32r2
 	default "mips32r6"	if BR2_mips_32r6
