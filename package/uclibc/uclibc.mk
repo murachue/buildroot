@@ -47,6 +47,8 @@ UCLIBC_LOCALES = \
 	$(firstword $(subst .,$(space),$(locale))))
 endif
 
+UCLIBC_EXTRA_CFLAGS = $(call qstrip,$(BR2_UCLIBC_EXTRA_CFLAGS))
+
 #
 # ARC definitions
 #
