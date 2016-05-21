@@ -10,18 +10,16 @@
 .type __start, %function
 .globl __start
 __start:
-	.set push
-	.set noreorder
+	/* magic n64 hardware init */
+	li $t0, 8
+	sw $t0, 0xBFC007FC
+
 	b skip_params
-	li $t0, 8 /* magic n64 hardware init (1/2) */
-	.set pop
 
 vmlinux_bin_start: .long 0 /* must be filled with PI_CART_ADDR, means phys-addr with 0x10000000(cart-base). */
 vmlinux_bin_size: .long 0 /* must be filled with PI_WR_LEN. note: Length must be >0. At most 7 bytes are xferred more. */
 
 skip_params:
-	sw $t0, 0xBFC007FC /* magic n64 hardware init (2/2) */
-
 	lw $a0, 0x80000318 /* memsize. if CIC_6105 this is 0x800003F0? */
 	lw $a1, vmlinux_bin_start
 	lw $a2, vmlinux_bin_size
