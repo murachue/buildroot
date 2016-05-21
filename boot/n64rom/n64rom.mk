@@ -25,7 +25,7 @@ define N64ROM_BUILD_CMDS
 endef
 
 define N64ROM_INSTALL_TARGET_CMDS
-	cp $(@D)/n64linux.n64 $(BINARIES_DIR)/
+	#cp $(@D)/n64linux.n64 $(BINARIES_DIR)/
 endef
 
 $(eval $(generic-package))

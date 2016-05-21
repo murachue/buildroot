@@ -2,7 +2,7 @@ OUTPUT_ARCH(mips)
 ENTRY(start)
 SECTIONS
 {
- . = 0xffffffff80001000;
+ . = 0xffffffff80000400;
  .text : {
   *(.text .text.*)
  }

@@ -1,21 +1,21 @@
 AS=$(CROSS_COMPILE)as
 LD=$(CROSS_COMPILE)ld
 OBJCOPY=$(CROSS_COMPILE)objcopy
+ASFLAGS += -march=vr4300
 
-all: n64linux.n64
+all: n64load.bin
 
-n64load.o: n64load.s vmlinux.bin
-	$(AS) -o $@ $<
+n64load.o: n64load.s
+	$(AS) $(ASFLAGS) -o $@ $<
 
-# note: abusing $+ as first(ldscript) and rest(objects).
-n64linux.elf: n64linux.lds n64load.o
-	$(LD) -o $@ -T $+
+# note: libdragon's "header" sets entry at 0x80000400.
+n64load.elf: n64load.o
+	$(LD) -Ttext 0x80000400 -o $@ $<
 
-n64linux.bin: n64linux.elf
-	$(OBJCOPY) -O binary -j .text -j .data $< $@
+n64load.bin: n64load.elf
+	$(OBJCOPY) -O binary -j .text $< $@
 
 # FIXME: must adjust -l arg by n64linux.bin size.
-n64linux.n64: n64linux.bin
-	$(N64TOOL) -l 4M -h $(N64HEADER) -o $@ -t "N64Linux" $<
-	echo -e '\x80\x00\x10\x00' | dd of=$@ bs=1 count=4 seek=8 conv=notrunc
-	$(N64CHKSUM) $@
+#n64linux.n64: n64load.bin
+#	$(N64TOOL) -l 4M -h $(N64HEADER) -o $@ -t "N64Linux" $<
+#	$(N64CHKSUM) $@
