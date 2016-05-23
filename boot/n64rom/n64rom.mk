@@ -19,13 +19,13 @@ N64ROM_MAKE_OPTS = \
 	N64HEADER="$(HOST_DIR)/usr/lib/header" \
 
 # I use LINUX_IMAGE_NAME, but it should be vmlinux.bin.
+#	cp $(BINARIES_DIR)/$(LINUX_IMAGE_NAME) $(@D)/vmlinux.bin
 define N64ROM_BUILD_CMDS
-	cp $(BINARIES_DIR)/$(LINUX_IMAGE_NAME) $(@D)/vmlinux.bin
 	$(TARGET_MAKE_ENVS) $(MAKE) $(N64ROM_MAKE_OPTS) -C $(@D)
 endef
 
 define N64ROM_INSTALL_TARGET_CMDS
-	#cp $(@D)/n64linux.n64 $(BINARIES_DIR)/
+	$(INSTALL) -m 0755 $(@D)/mkn64bin $(HOST_DIR)/usr/bin/mkn64bin
 endef
 
 $(eval $(generic-package))
