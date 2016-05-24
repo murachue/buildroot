@@ -10,6 +10,8 @@ N64ROM_LICENSE = Proprietary
 N64ROM_SITE_METHOD = local
 N64ROM_SITE = $(TOPDIR)/boot/n64rom/src
 
+N64ROM_INSTALL_IMAGES = YES
+
 N64ROM_DEPENDENCIES = host-libdragon linux
 
 N64ROM_MAKE_OPTS = \
@@ -26,6 +28,10 @@ endef
 
 define N64ROM_INSTALL_TARGET_CMDS
 	$(INSTALL) -m 0755 $(@D)/mkn64bin $(HOST_DIR)/usr/bin/mkn64bin
+endef
+
+define N64ROM_INSTALL_IMAGES_CMDS
+	$(INSTALL) -m 0755 $(@D)/n64load.bin $(BINARIES_DIR)/n64load.bin
 endef
 
 $(eval $(generic-package))
