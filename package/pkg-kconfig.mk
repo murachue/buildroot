@@ -190,9 +190,17 @@ $(1)-update-defconfig: $(1)-savedefconfig
 	cp -f $$($(2)_DIR)/defconfig $$($(2)_KCONFIG_FILE)
 	touch --reference $$($(2)_DIR)/.config $$($(2)_KCONFIG_FILE)
 
+# removing $(2)_TARGET_BUILD makes $(2)-build target work again,
+# and do it before make-clean to rebuild it even make-clean fails.
+# FIXME $(2)_BUILD_CMDS are defined in each pkg .mk file, so this is a too-thick-solution...
+$(1)-clean: $$($(2)_TARGET_CONFIGURE)
+	rm -f $$($(2)_TARGET_BUILD)
+	$$($(2)_MAKE_ENV) $$(MAKE) $$($(2)_MAKE_FLAGS) -C $$($(2)_DIR) clean
+
 endif # package enabled
 
 .PHONY: \
+	$(1)-clean \
 	$(1)-update-config \
 	$(1)-update-defconfig \
 	$(1)-savedefconfig \
