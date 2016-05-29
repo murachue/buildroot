@@ -86,9 +86,16 @@ define luser
 	printf "\n"
 end
 define lps
+	printf "PID.. PPID. R mm...... th COMM\n"
 	set $l_task = &init_task
 	while 1
-		printf "%5d %s\n", $l_task->pid, $l_task->comm
+		set $l_thr = $l_task->thread_group->next
+		set $l_nthrs = 1
+		while $l_thr != &$l_task->thread_group
+			set $l_thr = $l_thr->next
+			set $l_nthrs = $l_nthrs + 1
+		end
+		printf "%5d %5d %c %08x %2d %s\n", $l_task->pid, $l_task->parent->pid, ($l_task == runqueues->curr ? 'R' : $l_task->on_rq ? 'r' : 's'), $l_task->mm, $l_nthrs, $l_task->comm
 		set $l_task = (struct task_struct*)((int)$l_task->tasks->next - (int)&(((struct task_struct*)0)->tasks->next))
 		if $l_task == &init_task
 			loop_break
