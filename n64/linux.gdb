@@ -85,8 +85,9 @@ define luser
 	set $pc = $l_tpc
 	printf "\n"
 end
+#set $l_nexttask = (struct task_struct*)((int)$arg0->tasks->next - (int)&(((struct task_struct*)0)->tasks->next))
 define lps
-	printf "PID.. PPID. R mm...... th COMM\n"
+	printf "PID__ PPID_ R mm______ th COMM___________ task____ stack___ sp______ ra______\n"
 	set $l_task = &init_task
 	while 1
 		set $l_thr = $l_task->thread_group->next
@@ -95,8 +96,16 @@ define lps
 			set $l_thr = $l_thr->next
 			set $l_nthrs = $l_nthrs + 1
 		end
-		printf "%5d %5d %c %08x %2d %s\n", $l_task->pid, $l_task->parent->pid, ($l_task == runqueues->curr ? 'R' : $l_task->on_rq ? 'r' : 's'), $l_task->mm, $l_nthrs, $l_task->comm
-		set $l_task = (struct task_struct*)((int)$l_task->tasks->next - (int)&(((struct task_struct*)0)->tasks->next))
+		#set $l_pc = 0
+		##should not happen...
+		#if ((struct thread_info*)$l_task->stack)
+		#	#should happen, never switched process.
+		#	if ((struct thread_info*)$l_task->stack)->regs
+		#		set $l_pc = ((struct thread_info*)$l_task->stack)->regs->regs[31]
+		#	end
+		#end
+		printf "%5d %5d %c %08x %2d %-15s %08x %08x %08x %08x\n", $l_task->pid, $l_task->parent->pid, ($l_task == runqueues->curr ? 'R' : $l_task->on_rq ? 'r' : 's'), $l_task->mm, $l_nthrs, $l_task->comm, $l_task, $l_task->stack, $l_task->thread->reg29, $l_task->thread->reg31
+		set $l_task = (struct task_struct*)((int)$l_task->tasks->next - (int)&(((struct task_struct*)0)->tasks))
 		if $l_task == &init_task
 			loop_break
 		end
@@ -130,4 +139,9 @@ define lentry
 	lboot
 	lsecond
 	file build/linux-custom/vmlinux
+end
+define ldisco
+	disco
+	d
+	file
 end
