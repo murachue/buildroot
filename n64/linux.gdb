@@ -145,3 +145,92 @@ define ldisco
 	d
 	file
 end
+define _lprintcc
+	set $_ = $arg0
+	if $_ == 0
+		printf "?reservedcc0?"
+	else
+	if $_ == 1
+		printf "?reservedcc1?"
+	else
+	if $_ == 2
+		printf "uncached"
+	else
+	if $_ == 3
+		# cachable noncoherent
+		printf "noncoherent"
+	else
+	if $_ == 4
+		# cacheable coherent exclusive
+		printf "exclusive"
+	else
+	if $_ == 5
+		# cacheable coherent exclusive on write
+		printf "sharable"
+	else
+	if $_ == 6
+		# cacheable coherent update on write
+		printf "update"
+	else
+	if $_ == 7
+		printf "?reservedcc7?"
+	else
+		printf "?cc?(%d)", $_
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+end
+define _lprintbit
+	set $_ = $arg0
+	if $_
+		printf "%c", $arg1
+	else
+		printf "%c", $arg2
+	end
+end
+define lpte
+	printf "%08x -> PFN %06x ", $arg0, $arg0 >> 11
+	_lprintcc ($arg0>>8)&7
+	printf " "
+	_lprintbit $arg0&0x80 'D' 'd'
+	_lprintbit $arg0&0x40 'V' 'v'
+	_lprintbit $arg0&0x20 'G' 'g'
+	printf " "
+	_lprintbit $arg0&0x10 'M' 'm'
+	_lprintbit $arg0&0x08 'A' 'a'
+	_lprintbit $arg0&0x04 'W' 'w'
+	_lprintbit $arg0&0x02 'R' 'r'
+	_lprintbit $arg0&0x01 'P' 'p'
+end
+define lvm
+	# vaddr = gggg_gggg ggpp_pppp pppe_0000 0000_0000
+	# arch/mips/include/asm/pgtable-bits.h (R4300)
+	# pte = ffff_ffff ffff_ffff ffff_fccc dvgm_awrp
+	#       software: p=present r=read w=write a=accessed m=modified
+	#       hardware: g=global v=valid d=dirty c=cache-coherency
+	#                 f=page-frame-number
+	# note: caching to $p makes speed up significantly.
+	printf "vaddr=%08x ", $arg0
+	set $p = (int(**)[2])pgd_current[0]
+	printf "pgd_current[CPU0]=%08x ", $p
+	set $p = $p[$arg0 >> 22]
+	printf "pgd_entry[v31:22]=%08x\n", $p
+	set $p = $p[($arg0 & 0x3FE000) >> 13]
+	#printf "pte0/1 for vaddr: %08x,%08x\n", $p[0], $p[1]
+	if !((int)$arg0 & 0x1000)
+		printf "pte0 %08x: ", $arg0 & 0xFFFFe000
+		set $v = $p[0]
+		lpte $v
+		printf "\n"
+	else
+		printf "pte1 %08x: ", ($arg0 & 0xFFFFe000) + 0x1000
+		set $v = $p[1]
+		lpte $v
+		printf "\n"
+	end
+end
