@@ -3,7 +3,7 @@ LD=$(CROSS_COMPILE)ld
 OBJCOPY=$(CROSS_COMPILE)objcopy
 ASFLAGS += -march=vr4300
 
-all: n64load.bin mkn64bin
+all: n64load.bin mkn64bin mkn64bin.iso9660
 
 n64load.o: n64load.s
 	$(AS) $(ASFLAGS) -o $@ $<
@@ -22,4 +22,6 @@ n64load.bin: n64load.elf
 
 # host tools
 mkn64bin: mkn64bin.c
-	$(HOSTCC) -o $@ $<
+	$(HOSTCC) -Wall -Werror -o $@ $<
+mkn64bin.iso9660: mkn64bin.c
+	$(HOSTCC) -Wall -Werror -DISO9660 -o $@ $<

@@ -16,8 +16,8 @@ __start:
 
 	b skip_params
 
-vmlinux_bin_start: .long 0 /* must be filled with PI_CART_ADDR, means phys-addr with 0x10000000(cart-base). */
-vmlinux_bin_size: .long 0 /* must be filled with PI_WR_LEN. note: Length must be >0. At most 7 bytes are xferred more. */
+vmlinux_bin_start: .long 0xEEEEeeee /* must be filled with PI_CART_ADDR, means phys-addr with 0x10000000(cart-base). */
+vmlinux_bin_size: .long 0xDDDDdddd /* must be filled with PI_WR_LEN. note: Length must be >0. At most 7 bytes are xferred more. */
 
 skip_params:
 	lw $a0, 0x80000318 /* memsize. if CIC_6105 this is 0x800003F0? */

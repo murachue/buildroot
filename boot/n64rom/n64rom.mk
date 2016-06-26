@@ -28,10 +28,11 @@ endef
 
 define N64ROM_INSTALL_TARGET_CMDS
 	$(INSTALL) -m 0755 $(@D)/mkn64bin $(HOST_DIR)/usr/bin/mkn64bin
+	$(INSTALL) -m 0755 $(@D)/mkn64bin.iso9660 $(HOST_DIR)/usr/bin/mkn64bin.iso9660
 endef
 
 define N64ROM_INSTALL_IMAGES_CMDS
-	$(INSTALL) -m 0755 $(@D)/n64load.bin $(BINARIES_DIR)/n64load.bin
+	$(INSTALL) -m 0644 $(@D)/n64load.bin $(BINARIES_DIR)/n64load.bin
 endef
 
 $(eval $(generic-package))
