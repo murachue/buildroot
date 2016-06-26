@@ -83,7 +83,9 @@ define ROOTFS_ISO9660_PREPARATION
 	$(ROOTFS_ISO9660_INSTALL_BOOTLOADER)
 endef
 
+ifneq ($(ROOTFS_ISO9660_BOOT_MENU),)
 ROOTFS_ISO9660_PRE_GEN_HOOKS += ROOTFS_ISO9660_PREPARATION
+endif
 
 # Grub splash screen disabling
 ifeq ($(BR2_TARGET_ROOTFS_ISO9660_GRUB),y)
@@ -124,7 +126,9 @@ ROOTFS_ISO9660_PRE_GEN_HOOKS += ROOTFS_ISO9660_COPY_KERNEL
 # already inside the kernel image. Otherwise, make sure a cpio is
 # generated and use it as the initrd.
 ifeq ($(BR2_TARGET_ROOTFS_INITRAMFS),y)
+ifneq ($(ROOTFS_ISO9660_BOOT_MENU),)
 ROOTFS_ISO9660_PRE_GEN_HOOKS += ROOTFS_ISO9660_DISABLE_EXTERNAL_INITRD
+endif
 else
 ROOTFS_ISO9660_DEPENDENCIES += rootfs-cpio
 define ROOTFS_ISO9660_COPY_INITRD
@@ -138,16 +142,25 @@ endif
 
 else # ROOTFS_ISO9660_USE_INITRD
 
+ifneq ($(ROOTFS_ISO9660_BOOT_MENU),)
 ROOTFS_ISO9660_PRE_GEN_HOOKS += ROOTFS_ISO9660_DISABLE_EXTERNAL_INITRD
+endif
 
 endif # ROOTFS_ISO9660_USE_INITRD
 
 
+ifeq ($(BR2_TARGET_ROOTFS_ISO9660_N64ROM),y)
+define ROOTFS_ISO9660_CMD
+	$(HOST_DIR)/usr/bin/genisoimage -R -no-pad \
+		-o $@ $(ROOTFS_ISO9660_TARGET_DIR)
+endef
+else
 define ROOTFS_ISO9660_CMD
 	$(HOST_DIR)/usr/bin/genisoimage -J -R -b $(ROOTFS_ISO9660_BOOT_IMAGE) \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		-o $@ $(ROOTFS_ISO9660_TARGET_DIR)
 endef
+endif
 
 ifeq ($(BR2_TARGET_ROOTFS_ISO9660_HYBRID),y)
 define ROOTFS_ISO9660_GEN_HYBRID
