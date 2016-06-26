@@ -145,6 +145,11 @@ define ldisco
 	d
 	file
 end
+define lkill
+	k
+	d
+	file
+end
 define _lprintcc
 	set $_ = $arg0
 	if $_ == 0
