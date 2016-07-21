@@ -6,41 +6,42 @@ define lpath
 	end
 end
 define lshowm
-	printf "%08x-%08x", $m->vm_start, $m->vm_end
-	if $m->vm_file
+	printf "%08x-%08x %08x %03x", $m.vm_start, $m.vm_end, $m.vm_flags, $m.vm_page_prot.pgprot
+	if $m.vm_file
 		printf " "
-		lpath $m->vm_file
-		printf "+%05x(%x)", $m->vm_pgoff, $m->vm_file->f_pos
+		lpath $m.vm_file
+		printf "+%05x(%x)", $m.vm_pgoff, $m.vm_file.f_pos
 	end
 end
 define lmap
-	set $m = runqueues->curr->mm->mmap
-	while $m
+	set $m = *runqueues->curr->mm->mmap
+	while 1
 		lshowm
 		printf "\n"
-		set $m = $m->vm_next
+		if !$m.vm_next
+			loop_break
+		end
+		set $m = *$m.vm_next
 	end
 end
 define lin
 	printf "%08x @ ", $arg0
-	set $m = runqueues->curr->mm->mmap
-	while $m
-		if $m->vm_start <= $arg0 && $arg0 < $m->vm_end
+	set $m = *runqueues->curr->mm->mmap
+	while 1
+		if $m.vm_start <= $arg0 && $arg0 < $m.vm_end
 			lshowm
-			if $m->vm_file
-				printf " file offset %08x\n", $arg0 - $m->vm_start + ($m->vm_pgoff << 12)
+			if $m.vm_file
+				printf " file offset %08x\n", $arg0 - $m.vm_start + ($m.vm_pgoff << 12)
 			end
 			loop_break
 		else
-			if $arg0 < $m->vm_end
-				set $m = 0
-			else
-				set $m = $m->vm_next
+			# if #arg0 is not in this $m, $arg0 must be beyond this $m to continue.
+			if $arg0 < $m.vm_end
+				printf "?\n"
+				loop_break
 			end
+			set $m = *$m.vm_next
 		end
-	end
-	if !$m
-		printf "?\n"
 	end
 end
 define lsave
@@ -64,12 +65,14 @@ define lload
 	printf "\n"
 end
 define luser
+	# see arch/mips/include/asm/processor.h:/task_pt_regs
+	set $l_regs = *(struct pt_regs*)((int)((struct task_struct*)$arg0)->stack + 0x2000 - 32 - sizeof(struct pt_regs))
 	# first, save it to temporary conv-vars to avoid losing "regs" symbol
-	set $l_tpc = regs->cp0_epc
+	set $l_tpc = $l_regs.cp0_epc
 	set $i = 0
 	while $i < 32
 		printf "."
-		eval "set $l_t%d = %d", $i, regs->regs[$i]
+		eval "set $l_t%d = %d", $i, $l_regs.regs[$i]
 		set $i = $i + 1
 	end
 	printf "\n"
