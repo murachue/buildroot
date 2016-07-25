@@ -68,6 +68,7 @@ define luser
 	# see arch/mips/include/asm/processor.h:/task_pt_regs
 	set $l_regs = *(struct pt_regs*)((int)((struct task_struct*)$arg0)->stack + 0x2000 - 32 - sizeof(struct pt_regs))
 	# first, save it to temporary conv-vars to avoid losing "regs" symbol
+	printf "."
 	set $l_tpc = $l_regs.cp0_epc
 	set $i = 0
 	while $i < 32
@@ -87,6 +88,11 @@ define luser
 	printf "."
 	set $pc = $l_tpc
 	printf "\n"
+end
+define lpregs
+	set $l_pregs = (struct pt_regs*)((int)((struct task_struct*)$arg0)->stack + 0x2000 - 32 - sizeof(struct pt_regs))
+	print $l_pregs
+	print/x *$l_pregs
 end
 #set $l_nexttask = (struct task_struct*)((int)$arg0->tasks->next - (int)&(((struct task_struct*)0)->tasks->next))
 define lps_slow
@@ -178,6 +184,11 @@ define lkill
 	k
 	d
 	file
+end
+define lfir
+	file build/linux-custom/vmlinux
+	set $fir=40
+	c
 end
 define _lprintcc
 	set $_ = $arg0
