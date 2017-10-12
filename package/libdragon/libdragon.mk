@@ -8,6 +8,7 @@ LIBDRAGON_VERSION = $(call qstrip,$(BR2_LIBDRAGON_VERSION))
 LIBDRAGON_LICENSE = Public domain
 LIBDRAGON_LICENSE_FILES = LICENSE.md
 
+ifeq ($(BR2_PACKAGE_LIBDRAGON),y)
 # TODO this ifeq-cascade should be made more good.
 ifeq ($(BR2_LIBDRAGON_STABLE_VERSION),y)
 #LIBDRAGON_SITE = $(call github,DragonMinded,libdragon,$(LIBDRAGON_VERSION))
@@ -21,6 +22,7 @@ LIBDRAGON_SITE_METHOD = local
 LIBDRAGON_SITE = $(call qstrip,$(BR2_LIBDRAGON_CUSTOM_LOCAL_PATH))
 else
 $(error unknown site for libdragon)
+endif
 endif
 
 LIBDRAGON_INSTALL_STAGING = YES
