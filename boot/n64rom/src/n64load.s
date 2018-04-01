@@ -21,6 +21,7 @@ vmlinux_bin_size: .long 0xDDDDdddd /* must be filled with PI_WR_LEN. note: Lengt
 
 skip_params:
 	lw $a0, 0x80000318 /* memsize. if CIC_6105 this is 0x800003F0? */
+	/* load parameters before relocation */
 	lw $a1, vmlinux_bin_start
 	lw $a2, vmlinux_bin_size
 
@@ -33,7 +34,23 @@ skip_params:
 	addiu $t1, 4
 	sw $t3, ($t0)
 	addiu $t0, 4
-	blt $t1, $t2, 1b
+	bne $t1, $t2, 1b
+
+	/* flush I/D cache
+	 * do this before jump to relocated code and DMA from cart,
+	 * because we don't (and can't) just invalidate but write-back-invalidate Dcache.
+	 * memo: I=16k/32 D=8k/16 size/line.
+	 * memo: mtc0 $zero,TagLo;mtc0 $zero,TagHi;cache 8/9 is good?
+	 */
+	la $t0, 0x80000000
+	move $t1, $t0
+	addiu $t2, $t0, 16*1024 /* 16K Icache, 8K Dcache */
+1:
+	cache 0, 0($t0) /* I index inval */
+	cache 1, 0($t1) /* D index wback inval */
+	addiu $t0, 32
+	addiu $t1, 16
+	blt $t0, $t2, 1b
 
 	/* jump to relocated code */
 	/* j 0x803FF000 + 1f - __start;; Error: unsupported constant in relocation */
@@ -44,24 +61,8 @@ skip_params:
 	jr $t0
 1:
 
-	/* flush I/D cache */
-	/* do this before DMA from cart, because could not just invalidate but write-back-invalidate Dcache. */
-	/* TODO dynamically fetch cache line size from CP0 reg?? */
-	/* memo: from libdragon's "header" (0x03C8-0x0458), it seems I=16k/32 D=8k/16 size/line. */
-	/* memo: mtc0 $zero,TagLo;mtc0 $zero,TagHi;cache 8/9 is good? */
-	li $t0, 0
-	li $t1, 0
-	li $t2, 16*1024 /* 16K Icache 8K Dcache */
-1:
-	cache 0, 0($t0) /* I index inval */
-	cache 0, 16($t0) /* I index inval */
-	cache 1, 0($t1) /* D index wback inval */
-	addiu $t0, 32
-	addiu $t1, 16
-	blt $t0, $t2, 1b
-
 	/* load vmlinux */
-	/* we don't wait previous DMA, we assume DMA is ready. */
+	/* we don't wait previous DMA (should be done by bootcode), we assume DMA is ready. */
 	li $t0, 0xA4600000 /* PI base */
 	/*li $t1, 0x00000000 /* phys-ram addr */
 	/*sw $t1, 0x00($t0) /* PI_DRAM_ADDR_REG */
