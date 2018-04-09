@@ -1,0 +1,40 @@
+--- libcap-2.24/libcap/Makefile	2018-04-09 21:50:31.000000000 +0900
++++ libcap-2.24-mod/libcap/Makefile	21:52:22.785474921 +0900
+@@ -30,7 +30,7 @@
+ 
+ ifeq ($(shell gperf --version > /dev/null 2>&1 && echo yes),yes)
+ USE_GPERF_OUTPUT = $(GPERF_OUTPUT)
+-INCLUDE_GPERF_OUTPUT = -include $(GPERF_OUTPUT)
++#INCLUDE_GPERF_OUTPUT = -include $(GPERF_OUTPUT)
+ endif
+ 
+ libcap.pc: libcap.pc.in
+@@ -49,7 +49,7 @@
+ 	./_makenames > cap_names.h
+ 
+ $(GPERF_OUTPUT): cap_names.list.h
+-	perl -e 'print "struct __cap_token_s { const char *name; int index; };\n%{\nconst struct __cap_token_s *__cap_lookup_name(const char *, unsigned int);\n%}\n%%\n"; while ($$l = <>) { $$l =~ s/[\{\"]//g; $$l =~ s/\}.*// ; print $$l; }' < $< | gperf --ignore-case --language=ANSI-C --readonly --null-strings --global-table --hash-function-name=__cap_hash_name --lookup-function-name="__cap_lookup_name" -c -t -m20 $(INDENT) > $@
++	perl -e 'print "struct __cap_token_s { const char *name; int index; };\n%{\nconst struct __cap_token_s *__cap_lookup_name(const char *, size_t);\n%}\n%%\n"; while ($$l = <>) { $$l =~ s/[\{\"]//g; $$l =~ s/\}.*// ; print $$l; }' < $< | gperf --ignore-case --language=ANSI-C --readonly --null-strings --global-table --hash-function-name=__cap_hash_name --lookup-function-name="__cap_lookup_name" -c -t -m20 $(INDENT) > $@
+ 
+ cap_names.list.h: Makefile $(KERNEL_HEADERS)/linux/capability.h
+ 	@echo "=> making $@ from $(KERNEL_HEADERS)/linux/capability.h"
+@@ -68,7 +68,7 @@
+ 	$(CC) $(CFLAGS) $(IPATH) -c $< -o $@
+ 
+ cap_text.o: cap_text.c $(USE_GPERF_OUTPUT) $(INCLS)
+-	$(CC) $(CFLAGS) $(IPATH) $(INCLUDE_GPERF_OUTPUT) -c $< -o $@
++	$(CC) $(CFLAGS) $(IPATH) -c $< -o $@
+ 
+ install: install-shared install-static
+ 
+--- libcap-2.24/libcap/cap_text.c	2018-04-09 21:50:53.000000000 +0900
++++ libcap-2.24-mod/libcap/cap_text.c	2018-04-09 21:52:35.708808254 +0900
+@@ -15,6 +15,8 @@
+ #include <ctype.h>
+ #include <limits.h>
+ 
++#include "_caps_output.gperf"
++
+ /* Maximum output text length (16 per cap) */
+ #define CAP_TEXT_SIZE    (16*__CAP_MAXBITS)
+ 
