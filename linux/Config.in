@@ -275,6 +275,9 @@ choice
 	  The actual compression for the kernel should be selected in the
 	  kernel configuration menu.
 
+config BR2_LINUX_KERNEL_NONE
+	bool "no compression"
+
 config BR2_LINUX_KERNEL_GZIP
 	bool "gzip compression"
 
