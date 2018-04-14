@@ -1,0 +1,16 @@
+diff --git a/gas/config/tc-mips.c b/gas/config/tc-mips.c
+index d924bd6..eabe4e0 100644
+--- a/gas/config/tc-mips.c
++++ b/gas/config/tc-mips.c
+@@ -15691,8 +15691,9 @@ s_mipsset (int x ATTRIBUTE_UNUSED)
+     as_warn (_("tried to set unrecognized symbol: %s\n"), name);
+ 
+   /* The use of .set [arch|cpu]= historically 'fixes' the width of gp and fp
+-     registers based on what is supported by the arch/cpu.  */
+-  if (mips_opts.isa != prev_isa)
++     registers based on what is supported by the arch/cpu.
++     But if isa is modified by '.set pop', do nothing as gp/fp may be set manually by option. */
++  if (mips_opts.isa != prev_isa && strcmp (name, "pop") != 0)
+     {
+       switch (mips_opts.isa)
+ 	{
