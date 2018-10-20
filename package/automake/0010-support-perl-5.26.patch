@@ -1,0 +1,26 @@
+https://github.com/raspberrypi/noobs/issues/470#issuecomment-376256295
+
+franzgl commented on 27 Mar 2018
+
+As written by @Leobaillard you can use his patch. If you want to fix this with your editor (vi) you can go to line 3936 and make the following changes
+$ vi buildroot/output/host/usr/bin/automake
+goto line :3936 and change
+$text =~ s/\${([^ \t=:+{}]+)}/substitute_ac_subst_variables_worker ($1)/ge;
+to
+$text =~ s/\$\{([^ \t=:+\{\}]+)\}/substitute_ac_subst_variables_worker ($1)/ge;
+The error is with automake and perl v5.26.
+In perl v5.22, using a literal { in a regular expression was deprecated, and will emit a warning if it isn't escaped: \{. In v5.26, this won't just warn, it'll cause a syntax error.
+
+diff --git a/bin/automake b/bin/automake
+index 3212882..5177003 100755
+--- a/bin/automake
++++ b/bin/automake
+@@ -3933,7 +3933,7 @@ sub substitute_ac_subst_variables_worker
+ sub substitute_ac_subst_variables
+ {
+   my ($text) = @_;
+-  $text =~ s/\${([^ \t=:+{}]+)}/substitute_ac_subst_variables_worker ($1)/ge;
++  $text =~ s/\$\{([^ \t=:+{}]+)\}/substitute_ac_subst_variables_worker ($1)/ge;
+   return $text;
+ }
+ 
