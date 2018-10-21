@@ -246,8 +246,8 @@ int main(int argc, char *argv[]) {
 
 	if(fcopy_by_name_with_align(wfp, argv[2], 3, NULL, &bootsize, "a boot loader") < 0) {
 		fprintf(stderr, "E: copying a boot loader %s failed.\n", argv[2]);
-	return 1;
-}
+		return 1;
+	}
 
 	if(fcopy_by_name_with_align(wfp, argv[3], 3, &kernpos, &kernsize, "a linux kernel") < 0) {
 		fprintf(stderr, "E: copying a linux kernel %s failed.\n", argv[3]);
