@@ -1,0 +1,23 @@
+--- a/configure
++++ b/configure
+@@ -28873,7 +28873,7 @@
+    -Wall -Wstrict-prototypes -Werror=declaration-after-statement \
+    -Werror=missing-prototypes -Werror=implicit-function-declaration \
+    -Werror=pointer-arith -Werror=init-self -Werror=format-security \
+-   -Werror=format=2 -Werror=missing-include-dirs; do
++   -Werror=format=2 -Werror=missing-include-dirs -Wno-error=format-nonliteral; do
+ 
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking if $CC supports flag $flag in envvar CFLAGS" >&5
+ $as_echo_n "checking if $CC supports flag $flag in envvar CFLAGS... " >&6; }
+
+--- a/configure.ac
++++ a/configure.ac
+@@ -3508,7 +3508,7 @@
+    -Wall -Wstrict-prototypes -Werror=declaration-after-statement \
+    -Werror=missing-prototypes -Werror=implicit-function-declaration \
+    -Werror=pointer-arith -Werror=init-self -Werror=format-security \
+-   -Werror=format=2 -Werror=missing-include-dirs])
++   -Werror=format=2 -Werror=missing-include-dirs -Wno-error=format-nonliteral])
+ ])
+ AC_SUBST(GLIB_WARN_CFLAGS)
+ 
