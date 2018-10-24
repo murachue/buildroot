@@ -6,7 +6,7 @@ mkdir /dev/pts
 mount -t devpts none /dev/pts
 mount -t proc none /proc
 mount -t sysfs none /sys
-mount -t tmpfs none /tmp
+mount -t tmpfs none /tmp -o size=200%
 echo nameserver 8.8.8.8 > /etc/resolv.conf # redirects to /tmp/resolv.conf
 #exec </dev/tty1 >/dev/tty1 2>&1
 #echo hello stdout
@@ -25,7 +25,7 @@ echo nameserver 8.8.8.8 > /etc/resolv.conf # redirects to /tmp/resolv.conf
 sysctl -w vm.swappiness=100 vm.panic_on_oom=1
 
 echo prepareing swap
-losetup -o 8388608 /dev/loop0 /dev/cart0
+losetup -o 33554432 /dev/loop0 /dev/cart0
 mkswap /dev/loop0
 swapon /dev/loop0
 free
@@ -47,7 +47,7 @@ telnetd
 
 echo starting shell on ttyE0
 #setsid cttyhack sh -i </dev/ttyE0 >/dev/ttyE0 2>&1 &
-/usbsh.sh
+/shonusb.sh
 
 echo starting joytty
 jscal -s 2,1,2,-2,-2,8658944,9941751,1,1,1,1,6972137,7254791 /dev/input/js0
