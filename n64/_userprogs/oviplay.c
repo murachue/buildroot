@@ -4,7 +4,7 @@
 #include <tremor/ivorbisfile.h>
 #include <alsa/asoundlib.h>
 
-#define DEBUG
+//#define DEBUG
 
 static snd_pcm_t *pcm;
 static volatile sig_atomic_t aborting = 0;
@@ -212,6 +212,7 @@ int main(int argc, char **argv) {
 				long r = ov_read(&vf, buf, bufsize, /*&bitstream*/NULL);
 #ifdef DEBUG
 				printf("ov_read=%4ld (%4ld) ", r, r / bytesperframe);
+				fflush(stdout);
 #endif
 				if(r < 0) {
 					/* error */
@@ -227,9 +228,6 @@ int main(int argc, char **argv) {
 					while(0 < rf) {
 						/* snd_pcm_avail_delay(pcm, &sframest_avail, &sframest_delay) */
 						/* TODO mmap */
-#ifdef DEBUG
-						fflush(stdout);
-#endif
 						snd_pcm_sframes_t wf = snd_pcm_writei(pcm, p, rf);
 #ifdef DEBUG
 						{
