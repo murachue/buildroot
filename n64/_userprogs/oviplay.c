@@ -27,17 +27,71 @@ static void sighandler(int sig) {
 	signal(sig, SIG_DFL);
 }
 
+/* almost same as snd_pcm_recover... */
+static int will_recover(int err, snd_output_t *log, int verbose) {
+	if(err == -EPIPE) {
+		snd_pcm_status_t *status;
+		snd_pcm_state_t state;
+
+		snd_pcm_status_alloca(&status);
+		if((err = snd_pcm_status(pcm, status)) < 0) {
+			fprintf(stderr, "snd_pcm_status error=%d\n", err);
+			exit(EXIT_FAILURE);
+		}
+		state = snd_pcm_status_get_state(status);
+		if(state == SND_PCM_STATE_XRUN) {
+			/* TODO diff snd_pcm_status_get_trigger_htstamp and clock_gettime(CLOCK_MONOTONIC) to show at-least stop time? */
+			fprintf(stderr, "XRUN\n");
+			if(verbose) {
+				fprintf(stderr, "status:\n");
+				snd_pcm_status_dump(status, log);
+			}
+			if((err = snd_pcm_prepare(pcm)) < 0) {
+				fprintf(stderr, "snd_pcm_prepare error=%d\n", err);
+				exit(EXIT_FAILURE);
+			}
+#ifdef DEBUG
+			//goto bye;
+#endif
+		} else {
+			fprintf(stderr, "EPIPE but %s\n", snd_pcm_state_name(state));
+			if(verbose) {
+				fprintf(stderr, "status:\n");
+				snd_pcm_status_dump(status, log);
+			}
+			exit(EXIT_FAILURE);
+		}
+	} else if(err == -ESTRPIPE) {
+		if(verbose) {
+			fprintf(stderr, "ESTRPIPE\n");
+		}
+		while((err = snd_pcm_resume(pcm)) == -EAGAIN) {
+			sleep(1);	/* wait until suspend flag is released */
+		}
+		if (err < 0) {
+			fprintf(stderr, "snd_pcm_resume failed, restarting stream.\n");
+			if((err = snd_pcm_prepare(pcm)) < 0) {
+				fprintf(stderr, "snd_pcm_prepare error=%d\n", err);
+				exit(EXIT_FAILURE);
+			}
+		}
+		fprintf(stderr, "recovered from ESTRPIPE\n");
+	}
+	return err;
+}
+
 int main(int argc, char **argv) {
 	const char * const argv0 = argv[0];
 	char *dev = "default";
-	int buffer_time = 0, period_time = 0;
+	unsigned int buffer_time = 0, period_time = 0;
 	int verbose = 0;
 	char *fname = NULL;
+	int usemmap = 0;
 	int ret;
 
 	{
 		int opt;
-		while((opt = getopt(argc, argv, "d:b:p:v")) != -1) {
+		while((opt = getopt(argc, argv, "d:b:p:mv")) != -1) {
 			switch(opt) {
 			case 'd':
 				dev = optarg;
@@ -48,11 +102,14 @@ int main(int argc, char **argv) {
 			case 'p':
 				period_time = atoi(optarg);
 				break;
+			case 'm':
+				usemmap++;
+				break;
 			case 'v':
 				verbose++;
 				break;
 			default:
-				fprintf(stderr, "Unknown option: %c?\nUsage: %s [-d dev] ogg_file\n", opt, argv0);
+				fprintf(stderr, "Unknown option: %c?\nUsage: %s [-d dev] [-b buffer] [-p period] [-m] [-v] ogg_file\n", opt, argv0);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -90,8 +147,9 @@ int main(int argc, char **argv) {
 		{
 			snd_output_t *log;
 			snd_pcm_uframes_t period_size, buffer_size;
-			void *buf;
-			size_t bufsize, bytesperframe;
+			snd_pcm_uframes_t start_threshold;
+			void *buf = 0/*satisfy compiler*/;
+			size_t bufsize = 0/*satisfy compiler*/, bytesperframe;
 
 			/* for logging by alsa-lib */
 			if((ret = snd_output_stdio_attach(&log, stderr, 0)) < 0) {
@@ -112,15 +170,14 @@ int main(int argc, char **argv) {
 				snd_pcm_hw_params_t *hwparams;
 				snd_pcm_hw_params_alloca(&hwparams);
 				if((ret = snd_pcm_hw_params_any(pcm, hwparams)) < 0) {
-					fprintf(stderr, "snd_pcm_hw_params_any error=%ld\n", ret);
+					fprintf(stderr, "snd_pcm_hw_params_any error=%d\n", ret);
 					exit(EXIT_FAILURE);
 				}
 				if(verbose) {
 					fprintf(stderr, "default hwparams of \"%s\":\n", snd_pcm_name(pcm));
 					snd_pcm_hw_params_dump(hwparams, log);
 				}
-				/* TODO support mmap? SND_PCM_ACCESS_MMAP_INTERLEAVED */
-				if((ret = snd_pcm_hw_params_set_access(pcm, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
+				if((ret = snd_pcm_hw_params_set_access(pcm, hwparams, usemmap ? SND_PCM_ACCESS_MMAP_INTERLEAVED : SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
 					fprintf(stderr, "snd_pcm_hw_params_set_access error=%d (access type not available)\n", ret);
 					exit(EXIT_FAILURE);
 				}
@@ -133,12 +190,12 @@ int main(int argc, char **argv) {
 					exit(EXIT_FAILURE);
 				}
 				{
-					int rate = vi->rate;
+					unsigned int rate = vi->rate;
 					if((ret = snd_pcm_hw_params_set_rate_near(pcm, hwparams, &rate, 0)) < 0) {
 						fprintf(stderr, "snd_pcm_hw_params_set_rate_near error=%d\n", ret);
 						exit(EXIT_FAILURE);
 					}
-					printf("rate %d(vorbis) -> %d(hw)\n", vi->rate, rate);
+					printf("rate %lu(vorbis) -> %u(hw)\n", vi->rate, rate);
 				}
 				/* default buffer_time and period_time */
 				{
@@ -167,7 +224,7 @@ int main(int argc, char **argv) {
 				}
 				snd_pcm_hw_params_get_period_size(hwparams, &period_size, 0);
 				snd_pcm_hw_params_get_buffer_size(hwparams, &buffer_size);
-				printf("frames: period=%d buffer=%d\n", period_size, buffer_size);
+				printf("frames: period=%lu buffer=%lu\n", period_size, buffer_size);
 			}
 
 			{
@@ -180,12 +237,13 @@ int main(int argc, char **argv) {
 					exit(EXIT_FAILURE);
 				}
 				/* auto-start threshold */
-				if((ret = snd_pcm_sw_params_set_start_threshold(pcm, swparams, buffer_size/*uh...?? TODO <bufsize cause XRUN */)) < 0) {
+				start_threshold = buffer_size;
+				if((ret = snd_pcm_sw_params_set_start_threshold(pcm, swparams, start_threshold)) < 0) {
 					fprintf(stderr, "snd_pcm_sw_params_set_avail_min error=%d\n", ret);
 					exit(EXIT_FAILURE);
 				}
-				/* auto-stop on underrun when avail_frames >= threshold ...?? TODO <bufsize cause XRUN on full-buffer write?? */
-				if((ret = snd_pcm_sw_params_set_stop_threshold(pcm, swparams, buffer_size/*uh...??*/)) < 0) {
+				/* treat as XRUN when avail >= threshold... set buffer_size to allow almost empty. */
+				if((ret = snd_pcm_sw_params_set_stop_threshold(pcm, swparams, buffer_size)) < 0) {
 					fprintf(stderr, "snd_pcm_sw_params_set_stop_threshold error=%d\n", ret);
 					exit(EXIT_FAILURE);
 				}
@@ -201,15 +259,48 @@ int main(int argc, char **argv) {
 			}
 
 			bytesperframe = snd_pcm_format_physical_width(SND_PCM_FORMAT_S16_BE) / 8 * vi->channels;
-			bufsize = period_size * bytesperframe;
-			if((buf = malloc(bufsize)) == NULL) {
-				fprintf(stderr, "ENOMEM for buffer\n");
-				exit(EXIT_FAILURE);
+			if(!usemmap) {
+				bufsize = period_size * bytesperframe;
+				if((buf = malloc(bufsize)) == NULL) {
+					fprintf(stderr, "ENOMEM for buffer\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			for(;;) {
 				//int bitstream;
-				long r = ov_read(&vf, buf, bufsize, /*&bitstream*/NULL);
+				long r;
+				snd_pcm_uframes_t offset;
+				ret = 0;
+				if(usemmap) {
+					const snd_pcm_channel_area_t *areas;
+					snd_pcm_uframes_t frames;
+					snd_pcm_avail_update(pcm);
+					frames = snd_pcm_avail(pcm); /* request all avail */
+					if((ret = will_recover(snd_pcm_mmap_begin(pcm, &areas, &offset, &frames), log, verbose)) != 0) {
+						fprintf(stderr, "snd_pcm_mmap_begin error=%d\n", ret);
+						break;
+					}
+					/* note: in SND_PCM_ACCESS_MMAP_INTERLEAVED, areas[*].addr must be same, areas[i].offs=i*16, areas[*].step=16*chns. */
+					buf = (char*)areas[0].addr + offset * bytesperframe;
+					bufsize = frames * bytesperframe;
+#ifdef DEBUG
+					printf("mmap_begin=%5lu+%5lu ", offset, frames);
+#endif
+					if(frames == 0) {
+						/* no free buffer and does not block... wait here */
+						if((ret = will_recover(snd_pcm_mmap_commit(pcm, offset, frames), log, verbose)) != 0) {
+							fprintf(stderr, "snd_pcm_mmap_commit(0) error=%d\n", ret);
+							break;
+						}
+#ifdef DEBUG
+					printf("commit-wait\n");
+#endif
+						snd_pcm_wait(pcm, 100);
+						continue;
+					}
+				}
+				r = ov_read(&vf, buf, bufsize, /*&bitstream*/NULL);
 #ifdef DEBUG
 				printf("ov_read=%4ld (%4ld) ", r, r / bytesperframe);
 				fflush(stdout);
@@ -222,18 +313,41 @@ int main(int argc, char **argv) {
 					/* EOF */
 					break;
 				}
-				{
+				if(usemmap) {
+					snd_pcm_sframes_t avail, delay;
+					/* TODO commit does not return -EPIPE but frames(!!) when XRUN... check snd_pcm_state myself and recover. */
+					snd_pcm_sframes_t wf = will_recover(snd_pcm_mmap_commit(pcm, offset, r / bytesperframe), log, verbose);
+					snd_pcm_avail_delay(pcm, &avail, &delay);
+#ifdef DEBUG
+					printf("mmap_commit=%4ld a=%5lu d=%5lu %s\n", wf, avail, delay, snd_pcm_state_name(snd_pcm_state(pcm)));
+#endif
+					if(avail < 0) {
+						fprintf(stderr, "SOMETHING WENT WRONG\n");
+						break;
+					}
+					/* TODO snd_pcm_mmap_commit does not auto-start?? emulate here */
+					if(snd_pcm_state(pcm) == SND_PCM_STATE_PREPARED && start_threshold <= delay) {
+						printf("start\n");
+						if((ret = snd_pcm_start(pcm)) != 0) {
+							fprintf(stderr, "pcm_start error=%d\n", ret);
+							break;
+						}
+					}
+					if(wf < 0) {
+						fprintf(stderr, "mmap_commit error=%ld\n", wf);
+						break;
+					}
+				} else {
 					snd_pcm_uframes_t rf = r / bytesperframe;
 					char *p = buf;
 					while(0 < rf) {
 						/* snd_pcm_avail_delay(pcm, &sframest_avail, &sframest_delay) */
-						/* TODO mmap */
 						snd_pcm_sframes_t wf = snd_pcm_writei(pcm, p, rf);
 #ifdef DEBUG
 						{
 							snd_pcm_sframes_t avail, delay;
 							snd_pcm_avail_delay(pcm, &avail, &delay);
-							printf("snd_pcm_writei=%4d a=%5d d=%5d %s\n", wf, avail, delay, snd_pcm_state_name(snd_pcm_state(pcm)));
+							printf("snd_pcm_writei=%4ld a=%5lu d=%5lu %s\n", wf, avail, delay, snd_pcm_state_name(snd_pcm_state(pcm)));
 						}
 #endif
 						if(wf == rf) {
@@ -247,61 +361,18 @@ int main(int argc, char **argv) {
 							printf("snd_pcm_wait\n");
 #endif
 							snd_pcm_wait(pcm, 100); /* wait, 100ms timeout */
-						} else if(wf == -EPIPE) {
-							snd_pcm_status_t *status;
-							snd_pcm_state_t state;
-
-							snd_pcm_status_alloca(&status);
-							if((wf = snd_pcm_status(pcm, status)) < 0) {
-								fprintf(stderr, "snd_pcm_status error=%d\n", wf);
-								exit(EXIT_FAILURE);
-							}
-							state = snd_pcm_status_get_state(status);
-							if(state == SND_PCM_STATE_XRUN) {
-								/* TODO diff snd_pcm_status_get_trigger_htstamp and clock_gettime(CLOCK_MONOTONIC) to show at-least stop time? */
-								fprintf(stderr, "XRUN\n");
-								if(verbose) {
-									fprintf(stderr, "status:\n");
-									snd_pcm_status_dump(status, log);
-								}
-								if((wf = snd_pcm_prepare(pcm)) < 0) {
-									fprintf(stderr, "snd_pcm_prepare error=%d\n", wf);
-									exit(EXIT_FAILURE);
-								}
-#ifdef DEBUG
-								//goto bye;
-#endif
-							} else {
-								fprintf(stderr, "EPIPE but %s\n", snd_pcm_state_name(state));
-								if(verbose) {
-									fprintf(stderr, "status:\n");
-									snd_pcm_status_dump(status, log);
-								}
-								exit(EXIT_FAILURE);
-							}
-						} else if(wf == -ESTRPIPE) {
-							if(verbose) {
-								fprintf(stderr, "ESTRPIPE\n");
-							}
-							while((wf = snd_pcm_resume(pcm)) == -EAGAIN) {
-								sleep(1);	/* wait until suspend flag is released */
-							}
-							if (wf < 0) {
-								fprintf(stderr, "snd_pcm_resume failed, restarting stream.\n");
-								if((wf = snd_pcm_prepare(pcm)) < 0) {
-									fprintf(stderr, "snd_pcm_prepare error=%d\n", wf);
-									exit(EXIT_FAILURE);
-								}
-							}
-							fprintf(stderr, "recovered from ESTRPIPE\n");
-						} else {
-							fprintf(stderr, "pcm_write error=%d\n", r);
+						} else if((ret = will_recover(wf, log, verbose)) < 0) {
+							fprintf(stderr, "pcm_write error=%d\n", ret);
 							goto bye;
 						}
 					}
 				}
 			}
 bye:
+
+			if(!usemmap) {
+				free(buf);
+			}
 
 			snd_pcm_drain(pcm);
 
