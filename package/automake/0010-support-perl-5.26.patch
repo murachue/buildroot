@@ -11,11 +11,11 @@ $text =~ s/\$\{([^ \t=:+\{\}]+)\}/substitute_ac_subst_variables_worker ($1)/ge;
 The error is with automake and perl v5.26.
 In perl v5.22, using a literal { in a regular expression was deprecated, and will emit a warning if it isn't escaped: \{. In v5.26, this won't just warn, it'll cause a syntax error.
 
-diff --git a/bin/automake b/bin/automake
-index 3212882..5177003 100755
---- a/bin/automake
-+++ b/bin/automake
-@@ -3933,7 +3933,7 @@ sub substitute_ac_subst_variables_worker
+diff --git a/bin/automake.in b/bin/automake.in
+index eedc8bc..691a35b 100644
+--- a/bin/automake.in
++++ b/bin/automake.in
+@@ -3878,7 +3878,7 @@ sub substitute_ac_subst_variables_worker
  sub substitute_ac_subst_variables
  {
    my ($text) = @_;
