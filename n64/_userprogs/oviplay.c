@@ -1,3 +1,8 @@
+/*
+ * oviplay: play ogg vorbis using tremor and ALSA
+ * Copyright 2018 Murachue <murachue+github@gmail.com>
+ * License: MIT
+ */
 #include <unistd.h>
 #include <stdio.h>
 #include <signal.h>

@@ -1,3 +1,8 @@
+/*
+ * jstest2: joystick input test
+ * Copyright 2018 Murachue <murachue+github@gmail.com>
+ * License: MIT
+ */
 // http://d.hatena.ne.jp/aki-yam/20130729/1375097014
 // jstest output is too much.
 

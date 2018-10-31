@@ -1,3 +1,9 @@
+/*
+ * joytty: input chars by joystick
+ * Copyright 2018 Murachue <murachue+github@gmail.com>
+ * License: MIT
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
